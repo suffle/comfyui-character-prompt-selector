@@ -65,14 +65,14 @@ Category names can be anything valid as a Python identifier
 
 ### Option A — `extra_model_paths.yaml` (recommended)
 
-Add a `prompt_library` entry to your `extra_model_paths.yaml`.  The path is
+Add a `character_prompt_library` entry to your `extra_model_paths.yaml`.  The path is
 resolved relative to `base_path`, exactly like checkpoints or LoRAs:
 
 ```yaml
 # ComfyUI/extra_model_paths.yaml
 comfyui:
     base_path: /workspace          # absolute, or relative to this file
-    prompt_library: prompt_library/
+    character_prompt_library: prompt_library/
 ```
 
 ```yaml
@@ -81,7 +81,7 @@ runpod_volume:
     base_path: /workspace
     checkpoints: models/checkpoints/
     loras: models/loras/
-    prompt_library: prompt_library/   # ← add this line
+    character_prompt_library: prompt_library/   # ← add this line
 ```
 
 Restart ComfyUI once after editing the file.

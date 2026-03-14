@@ -27,7 +27,7 @@ import yaml
 # ──────────────────────────────────────────────────────────────────────────────
 # Constants
 # ──────────────────────────────────────────────────────────────────────────────
-FOLDER_KEY = "prompt_library"
+FOLDER_KEY = "character_prompt_library"
 NODE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_PROMPTS_DIR = os.path.join(NODE_DIR, "prompts")
 

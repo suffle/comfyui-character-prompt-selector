@@ -1,0 +1,21 @@
+base: "1boy, short dark hair, green eyes, athletic build, masterpiece, best quality"
+
+outfits:
+  - "tactical jacket, cargo pants, boots"
+  - "formal suit, white shirt, black tie"
+  - "martial arts gi, white uniform, black belt"
+
+expressions:
+  - "determined, focused, serious"
+  - "grinning, confident, cocky"
+  - "calm, neutral expression"
+
+poses:
+  - "battle stance, fists raised"
+  - "walking, hands in pockets, casual"
+  - "sitting on steps, elbows on knees"
+
+backgrounds:
+  - "city rooftop, night, neon lights"
+  - "dojo, wooden floor, dim lighting"
+  - "empty street, rain, atmospheric"

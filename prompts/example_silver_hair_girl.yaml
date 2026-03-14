@@ -1,0 +1,19 @@
+base: "1girl, long silver hair, blue eyes, masterpiece, best quality"
+
+outfits:
+  - "red cocktail dress, high heels, elegant"
+  - "gothic lolita dress, black and white, ribbon, lace"
+  - "school uniform, white blouse, navy skirt"
+  - "casual, jeans, oversized hoodie"
+
+expressions:
+  - "smile, happy, cheerful"
+  - "serious, cold expression, stoic"
+  - "surprised, wide eyes, open mouth"
+  - "embarrassed, blushing, shy"
+
+poses:
+  - "standing, arms crossed, confident"
+  - "sitting, legs crossed, relaxed"
+  - "looking over shoulder, glance back"
+  - "arms raised, dynamic pose"

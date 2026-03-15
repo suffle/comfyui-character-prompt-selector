@@ -5,9 +5,10 @@ A custom node that reads character definition YAML files and exposes one
 dropdown per category so users can mix-and-match prompt fragments before
 passing the combined string to a downstream conditioning node.
 
-Directory resolution order (first wins):
-  1. folder_paths "character_prompt_library" key  →  configured via extra_model_paths.yaml
-  2. <node_dir>/prompts/                           →  fallback bundled with the node
+Directory resolution — single directory, no mixing:
+  1. First existing path under folder_paths key "character_prompt_library"
+     (set via extra_model_paths.yaml)  ← used when configured
+  2. <node_dir>/prompts/               ← fallback when nothing is configured
 
 extra_model_paths.yaml example:
     my_volumes:
@@ -41,47 +42,50 @@ logger = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────────────────────
 try:
     import folder_paths as _fp
-
-    # Register the bundled fallback directory so it's always available.
-    _fp.add_model_folder_path(FOLDER_KEY, DEFAULT_PROMPTS_DIR)
     _HAS_FP = True
 except ImportError:  # running outside ComfyUI (tests, portability)
     _fp = None  # type: ignore[assignment]
     _HAS_FP = False
 
 
-def _get_prompt_dirs() -> list[str]:
-    """Return all configured prompt-library directories that actually exist."""
-    dirs: list[str] = []
+def _get_prompt_dir() -> str:
+    """Return the single active prompt-library directory.
+
+    Uses the first path registered under FOLDER_KEY in folder_paths (set by
+    extra_model_paths.yaml).  Falls back to the bundled prompts/ subfolder
+    when nothing is configured.  Never mixes multiple directories — that would
+    cause values from different character sets to bleed into each other.
+    """
     if _HAS_FP:
         try:
-            dirs = _fp.get_folder_paths(FOLDER_KEY)
+            paths = _fp.get_folder_paths(FOLDER_KEY)
+            # Filter to directories that actually exist; take the first one.
+            for p in paths:
+                if os.path.isdir(p):
+                    return p
         except KeyError:
             pass
-    if not dirs:
-        dirs = [DEFAULT_PROMPTS_DIR]
-    return [d for d in dirs if os.path.isdir(d)]
+    return DEFAULT_PROMPTS_DIR
 
 
 def _get_yaml_files() -> dict[str, str]:
-    """
-    Scan every prompt-library directory for *.yaml / *.yml files.
+    """Scan the active prompt-library directory for *.yaml / *.yml files.
 
-    Returns {filename: absolute_path}.  When the same filename appears in
-    multiple directories only the first occurrence is kept, so users can
-    override bundled files by placing a file with the same name in a
-    higher-priority directory.
+    Returns {filename: absolute_path}.
+    Skips macOS resource-fork ghost files (names starting with "._").
     """
+    directory = _get_prompt_dir()
     found: dict[str, str] = {}
-    for directory in _get_prompt_dirs():
-        try:
-            entries = sorted(os.listdir(directory))
-        except OSError as exc:
-            logger.warning("[CharacterPromptSelector] Cannot list %s: %s", directory, exc)
+    try:
+        entries = sorted(os.listdir(directory))
+    except OSError as exc:
+        logger.warning("[CharacterPromptSelector] Cannot list %s: %s", directory, exc)
+        return found
+    for filename in entries:
+        if filename.startswith("._"):
             continue
-        for filename in entries:
-            if filename.lower().endswith((".yaml", ".yml")) and filename not in found:
-                found[filename] = os.path.join(directory, filename)
+        if filename.lower().endswith((".yaml", ".yml")):
+            found[filename] = os.path.join(directory, filename)
     return found
 
 

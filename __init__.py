@@ -6,13 +6,13 @@ dropdown per category so users can mix-and-match prompt fragments before
 passing the combined string to a downstream conditioning node.
 
 Directory resolution order (first wins):
-  1. folder_paths "prompt_library" key  →  configured via extra_model_paths.yaml
-  2. <node_dir>/prompts/                →  fallback bundled with the node
+  1. folder_paths "character_prompt_library" key  →  configured via extra_model_paths.yaml
+  2. <node_dir>/prompts/                           →  fallback bundled with the node
 
 extra_model_paths.yaml example:
     my_volumes:
         base_path: /workspace
-        prompt_library: prompt_library/
+        character_prompt_library: prompt_library/
 """
 
 from __future__ import annotations
@@ -240,4 +240,58 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CharacterPromptSelector": "Character Prompt Selector",
 }
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
+# JS extension — ComfyUI serves every file in WEB_DIRECTORY as a static asset
+# under /extensions/<node-folder-name>/
+WEB_DIRECTORY = "./js"
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# REST API routes consumed by the JS extension
+# ──────────────────────────────────────────────────────────────────────────────
+def _register_api_routes() -> None:
+    """Register lightweight JSON endpoints so the frontend can fetch
+    per-file category data without a full page reload."""
+    try:
+        from server import PromptServer  # type: ignore[import]
+        from aiohttp import web
+        if PromptServer.instance is None:
+            return
+    except Exception:
+        return  # running outside ComfyUI or server not yet ready
+
+    routes = PromptServer.instance.routes
+
+    @routes.get("/character_prompt_selector/files")
+    async def _api_files(request: web.Request) -> web.Response:
+        """Return an up-to-date list of YAML filenames."""
+        yaml_files = _get_yaml_files()
+        return web.json_response({"files": list(yaml_files.keys())})
+
+    @routes.get("/character_prompt_selector/categories")
+    async def _api_categories(request: web.Request) -> web.Response:
+        """Return categories + values for a single YAML file.
+
+        Query param: ?file=<filename.yaml>
+        Response:    {"base": "...", "categories": {"outfits": [...], ...}}
+        """
+        filename = request.rel_url.query.get("file", "")
+        yaml_files = _get_yaml_files()
+        if not filename or filename not in yaml_files:
+            return web.json_response({"error": "File not found"}, status=404)
+        data = _load_yaml_safe(yaml_files[filename])
+        if data is None:
+            return web.json_response({"error": "Failed to parse file"}, status=500)
+        categories: dict[str, list[str]] = {}
+        for key, values in data.items():
+            if key == "base" or not isinstance(values, list):
+                continue
+            categories[key] = [str(v).strip() for v in values if str(v).strip()]
+        return web.json_response({
+            "base": str(data.get("base", "")).strip(),
+            "categories": categories,
+        })
+
+
+_register_api_routes()
